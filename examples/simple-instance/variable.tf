@@ -1,6 +1,14 @@
+terraform {
+  required_version = "~> 0.11"
+}
+
 provider "aws" {
   version = "~> 1.0.0"
   region  = "${var.aws_region}"
+}
+
+provider "template" {
+  version = "~> 1.0"
 }
 
 variable "aws_region" {

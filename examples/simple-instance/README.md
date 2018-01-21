@@ -101,7 +101,7 @@ cat $HOME/.ssh/id_rsa.pub
 
 should show an existing key that you might often use from the host that you might be running this example from.
 
-### Init & Apply
+### Init, Plan, & Apply
 
 This the prerequisites taken care of and ssh key created you should be able to run the following command:
 
@@ -109,16 +109,138 @@ This the prerequisites taken care of and ssh key created you should be able to r
 terraform init
 ```
 
-```shell
-terraform apply
+Should output something like this:
+
+```
+Initializing modules...
+- module.router
+  Getting source "../../"
+- module.vpc
+  Found version 1.15.0 of terraform-aws-modules/vpc/aws on registry.terraform.io
+  Getting source "terraform-aws-modules/vpc/aws"
+
+Initializing provider plugins...
+- Checking for available provider plugins on https://releases.hashicorp.com...
+- Downloading plugin for provider "aws" (1.0.0)...
+- Downloading plugin for provider "template" (1.0.0)...
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
 ```
 
-### Destroy
+Once the `init` has worked successfully we can see what this module plans to do by running the following command:
+
+```shell
+terraform plan -out the.plan
+```
+
+Which should list a bunch of output and at the very end tell us:
+
+```
+Plan: 18 to add, 0 to change, 0 to destroy.
+
+------------------------------------------------------------------------
+
+This plan was saved to: the.plan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "the.plan"
+```
+
+Which means we can now apply the plan:
+
+
+```shell
+terraform apply "the.plan"
+```
+
+This might take a few minutes but in the end we should see something like this:
+
+```
+Apply complete! Resources: 18 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+router-public-ip = 55.173.84.55
+```
+
+Take note of the `router-public-ip` value, as we'll need that IP address in order to use the router.
+
+### Verify it worked
+
+It will take the instance a few minutes to boot up, install docker, and start the router. Once you've waited a good 5 minutes, ssh into our instance:
+
+```shell
+ssh -i ./ssh_key/id_rsa ubuntu@54.173.84.55
+```
+
+From there we can run:
+
+```shell
+docker ps
+```
+
+And we should see:
+
+```
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS               NAMES
+fc158f30cde9        netifi/proteus      "./bin/router-server…"   2 minutes ago       Up 2 minutes                            proteus-router
+```
+
+Similarly if we run:
+
+```shell
+docker logs proteus-router
+```
+
+we should see:
+
+```
+2018-01-21 15:19:56,211 INFO i.n.r.Bootstrap [main] 
+2018-01-21 15:19:56,214 INFO i.n.r.Bootstrap [main]               _   _  __ _ 
+2018-01-21 15:19:56,214 INFO i.n.r.Bootstrap [main]              | | (_)/ _(_)
+2018-01-21 15:19:56,214 INFO i.n.r.Bootstrap [main]    _ __   ___| |_ _| |_ _ 
+2018-01-21 15:19:56,214 INFO i.n.r.Bootstrap [main]   | '_ \ / _ \ __| |  _| |
+2018-01-21 15:19:56,214 INFO i.n.r.Bootstrap [main]   | | | |  __/ |_| | | | |
+2018-01-21 15:19:56,215 INFO i.n.r.Bootstrap [main]   |_| |_|\___|\__|_|_| |_|
+2018-01-21 15:19:56,215 INFO i.n.r.Bootstrap [main] 
+2018-01-21 15:19:56,215 INFO i.n.r.Bootstrap [main] Starting Proteus Router
+2018-01-21 15:19:56,218 INFO i.n.r.u.C.ConfigHolder [main] rsocket router bound to 0.0.0.0:8001
+2018-01-21 15:19:56,222 INFO i.n.r.u.C.ConfigHolder [main] rsocket router public address set to 127.0.0.1:8001
+2018-01-21 15:19:56,223 INFO i.n.r.u.C.ConfigHolder [main] cluster bound to 0.0.0.0:7001
+2018-01-21 15:19:56,224 INFO i.n.r.u.C.ConfigHolder [main] cluster service public address set to 127.0.0.1:7001
+2018-01-21 15:19:56,225 INFO i.n.r.u.C.ConfigHolder [main] admin service bound to 0.0.0.0:6001
+2018-01-21 15:19:56,225 INFO i.n.r.u.C.ConfigHolder [main] admin service public address set to 127.0.0.1:6001
+2018-01-21 15:19:56,225 INFO i.n.r.Bootstrap [main] seeding cluster with 127.0.0.1:7001
+2018-01-21 15:19:56,751 INFO i.n.r.Bootstrap [main] Cluster Server started
+2018-01-21 15:19:56,829 INFO i.n.r.a.RouterSocketAcceptor [main] Setting router id to F02C121C97926CAC52AA
+2018-01-21 15:19:56,832 INFO i.n.r.Bootstrap [main] Admin Server started
+2018-01-21 15:19:56,835 INFO i.n.r.Bootstrap [main] Router started in 624.37 milliseconds
+```
+
+Which indicates that our router is up and running.
+
+## Next Steps
+
+From here you could follow our [Proteus 5 minute Quick Start](https://github.com/netifi/proteus-quickstart/wiki/Proteus-5-minute-Quick-Start) guide. However, you won't need to run the router locally now that you have one running in AWS, and you'll need to make sure you change the values for:
+
+```
+.host("localhost")
+```
+
+in the service and client to the `router-public-ip`.
+
+## Clean Up
 
 When you're done running your Proteus Router you can tear down this example with the following command:
 
 ```shell
 terraform destroy
 ```
-
-## Next Steps
