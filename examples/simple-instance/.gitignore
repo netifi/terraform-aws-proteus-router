@@ -1,0 +1,7 @@
+access.env
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+ssh_key/id_rsa
+ssh_key/id_rsa.pub
+.terraform/
